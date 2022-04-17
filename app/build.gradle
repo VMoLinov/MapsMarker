@@ -1,44 +1,76 @@
-plugins {
+plugins { // Подключаемые плагины
     id 'com.android.application'
     id 'org.jetbrains.kotlin.android'
-    id 'kotlin-parcelize'
 }
 
-android {
+android { // Свойства android плагина
     compileSdk 31
+    // Свойство, определяющее версию Android SDK, которая будет использоваться gradle для компиляции.
 
-    defaultConfig {
-        applicationId "ru.molinov.mapsmarker"
-        minSdk 24
+    defaultConfig { // Параметры для всех версий сборок.
+        applicationId "ru.molinov.mapsmarker" // id проекта.
+        /**
+         * Свойство, указывающее, для какой минимальной версии Android было разработано и
+         * протестировано приложение. 21 API это Android 5.0 Lollipop, 2014 г.в. Таким образом
+         * наш проект сможет работать на 98.5% используемых устройств.
+         */
+        minSdk 21
+        /**
+         * Свойство, указывающее, для какой версии Android было разработано и протестировано
+         * приложение. API 31 это Android 12 Snow Cone, 2021 г.в.
+         */
         targetSdk 31
-        versionCode 1
-        versionName "1.0"
+        versionCode 1 // Код текущей версии проекта. Только целое значение.
+        versionName "1.0" // Имя текущей версии проекта.
 
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
     }
 
-    buildTypes {
-        release {
+    buildTypes { // Параметры для разных версий сборки проекта
+        /**
+         * Указанные здесь параметры применятся только для релизной сборки. Загрузить в Google
+         * play можно только релизную версию, подписанную посредством upload key.
+         */
+        release { // Параметры только для релизной сборки, которую необходимо подписывать
+            /**
+             * Указывает, следует ли включить сжатие кода для этого типа сборки. По умолчанию,
+             * когда включается сжатие кода, подключаемый модуль Android использует ProGuard,
+             * адрес файла настроек которого нужно указать в любом случае.
+             */
             minifyEnabled false
             proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
         }
     }
-    compileOptions {
-        sourceCompatibility JavaVersion.VERSION_1_8
-        targetCompatibility JavaVersion.VERSION_1_8
+    compileOptions { // Параметры компиляции
+        sourceCompatibility JavaVersion.VERSION_1_8 // Версия исходного кода Java.
+        targetCompatibility JavaVersion.VERSION_1_8 // Версия сгенерированного байт-кода Java.
     }
+    /**
+     * Для исходных наборов конкретной платформы используется соответствующий вариант библиотеки,
+     * а к остальным добавляется общая стандартная библиотека. Плагин Kotlin Gradle выберет
+     * соответствующую стандартную библиотеку JVM в зависимости от параметра kotlinOptions.jvmTarget
+     * компилятора вашего скрипта сборки Gradle.
+     */
     kotlinOptions {
         jvmTarget = '1.8'
     }
-
+    /**
+     * Для доступа к layout будем использовать привязку представлений (View Binding).
+     * Привязка представлений — это функция, упрощающая написание кода, взаимодействующего
+     * с представлениями. Как только привязка представления включена в модуле, он создает класс
+     * привязки для каждого файла макета XML, присутствующего в этом модуле. Экземпляр класса
+     * привязки содержит прямые ссылки на все представления, имеющие идентификатор в соответствующем
+     * макете. Привязка представления заменяет findViewById.
+     */
     buildFeatures {
         viewBinding true
     }
 }
 
 dependencies {
-
+    // имплементируем в проект библиотеку яндекс карт lite версии
     implementation 'com.yandex.android:maps.mobile:4.0.0-lite'
+    // стандартные зависимости для android
     implementation 'androidx.core:core-ktx:1.7.0'
     implementation 'androidx.appcompat:appcompat:1.4.1'
     implementation 'com.google.android.material:material:1.5.0'
@@ -46,3 +78,4 @@ dependencies {
     androidTestImplementation 'androidx.test.ext:junit:1.1.3'
     androidTestImplementation 'androidx.test.espresso:espresso-core:3.4.0'
 }
+// https://developer.android.com/

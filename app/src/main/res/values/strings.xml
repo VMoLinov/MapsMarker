@@ -3,4 +3,5 @@
     <string name="cancel">Cancel</string>
     <string name="save">Save</string>
     <string name="enter_description">enter description</string>
+    <string name="need_permisson">Необходимо разрешение к точному местоположению устройства</string>
 </resources>
