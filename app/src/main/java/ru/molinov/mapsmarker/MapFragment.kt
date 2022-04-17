@@ -16,7 +16,6 @@ import com.yandex.mapkit.MapKitFactory
 import com.yandex.mapkit.geometry.Point
 import com.yandex.mapkit.map.CameraPosition
 import com.yandex.mapkit.map.Map
-import com.yandex.mapkit.map.MapObjectCollection
 import com.yandex.mapkit.user_location.UserLocationLayer
 import ru.molinov.mapsmarker.databinding.FragmentMapBinding
 
@@ -24,13 +23,13 @@ class MapFragment : Fragment() {
 
     /**
      * Вместо findViewById мы используем view binding. _binding будет инициализирована в callback'е
-     * жизненного цикла фрагмента #onCreateView. Результатом выполнения этой функции будет привязка
+     * жизненного цикла фрагмента #onCreateView(). Результатом выполнения этой функции будет привязка
      * fragment_map.xml к MapFragment
      * Обращаемся посредством константы binding через форсколл (!!) в тех местах, где мы уверены, что
      * _binding != null Такой подход реализован для упрощения читабельности кода, нет нужды
      * каждый раз обращаться к binding с сейфколлом (binding?). В callback'е жизненного цикла
      * фрагмента #onDestroy() удаляем привязку binding к текущему представлению
-     * */
+     */
     private var _binding: FragmentMapBinding? = null
     private val binding get() = _binding!!
 
@@ -38,13 +37,17 @@ class MapFragment : Fragment() {
      * Объекты, необходимые для работы нашего функционала.
      * map - объект карты
      * userLocation - UI слой с иконкой месторасположения устройства
-     * locationManager -
-     * */
+     * locationManager - возьмём менеджер ОС для более быстрой инициализации и дальнейшей работы
+     */
     private lateinit var map: Map
     private lateinit var userLocation: UserLocationLayer
-    private lateinit var locationManager: com.yandex.mapkit.location.LocationManager
+    private lateinit var locationManager: LocationManager
 
-    private val locationListener = LocationListener {
+    /**
+     * Слушатель изменения местоположения. При каждом обновлении возвращает широту и долготу.
+     * Привязываем каждое обновление к сдвигу map на текущую локацию
+     */
+    private var locationListener = LocationListener {
         map.move(
             CameraPosition(Point(it.latitude, it.longitude), ZOOM, AZIMUTH, TILT),
             ANIMATION,
@@ -52,6 +55,9 @@ class MapFragment : Fragment() {
         )
     }
 
+    /**
+     * Этот и последующие функции жизненного цикла вызваны в порядке их вызова ОС
+     */
     override fun onCreateView(
         inflater: LayoutInflater,
         container: ViewGroup?,
@@ -61,15 +67,32 @@ class MapFragment : Fragment() {
         return binding.root
     }
 
+    /**
+     * Инициализируем Kit от Яндекса, затем обращаемся с экземпляру инициализированного объекта
+     * и создаём слой местонахождения устройства. Привязываем слой к окну карты через binding и
+     * помещаем результат в объект userLocation
+     * Так же инициализируем объект map из созданной карты
+     * Обращаемся к системным сервисам через активити и забираем LOCATION_SERVICE
+     */
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
         MapKitFactory.initialize(requireContext())
         userLocation =
             MapKitFactory.getInstance().createUserLocationLayer(binding.mapView.mapWindow)
-//        locationManager = MapKitFactory.getInstance().createLocationManager()
         map = binding.mapView.map
-        val locationManager: LocationManager =
-            (requireActivity().getSystemService(LOCATION_SERVICE)) as LocationManager
+        locationManager = (requireActivity().getSystemService(LOCATION_SERVICE)) as LocationManager
+    }
+
+    /**
+     * Последний callback жизненного цикла перед отображением на экране. Запускаем UI карты и
+     * MapKit. Перед отображением и подпиской на обновления местоположения нужно проверить
+     * наличие разрешений на использование местоположения. Получаем в условии true - отображаем,
+     * подписываемся
+     */
+    override fun onStart() {
+        super.onStart()
+        binding.mapView.onStart()
+        MapKitFactory.getInstance().onStart()
         if (ContextCompat.checkSelfPermission(
                 requireContext(),
                 Manifest.permission.ACCESS_FINE_LOCATION
@@ -82,29 +105,28 @@ class MapFragment : Fragment() {
         }
     }
 
-    override fun onStart() {
-        super.onStart()
-        binding.mapView.onStart()
-        MapKitFactory.getInstance().onStart()
-    }
-
+    /**
+     * Если разрешение получено только на время работы приложения и мы свернём его - приложение
+     * закроется с ошибкой. Что бы этого не случалось и для экономии заряда батареи устройства
+     * удаляем подписку locationManager
+     * Если она нам понадобится снова - при возврате в приложение вызовется callback #onStart()
+     * где мы снова подпишем locationManager на обновления
+     */
     override fun onStop() {
         super.onStop()
-//        binding.mapView.onStop()
-//        MapKitFactory.getInstance().onStop()
+        locationManager.removeUpdates(locationListener)
     }
 
-    override fun onDestroy() {
-        _binding = null
-        super.onDestroy()
-    }
-
+    /**
+     * Статичный объект класса. Может существовать в единственном экземпляре. В данной
+     * работе в него вынесены константы для удобства изменения свойств
+     */
     companion object {
-        val ANIMATION = Animation(Animation.Type.SMOOTH, 0.4f)
-        const val ZOOM = 14.0f
-        const val AZIMUTH = 0.0f
-        const val TILT = 0.0f
-        const val MIN_TIME_MS = 1000L
-        const val MIN_DISTANCE_M = 500f
+        val ANIMATION = Animation(Animation.Type.SMOOTH, 0.4f) // Тип анимации и продолжительность в секундах
+        const val ZOOM = 14.0f // Размер приближения
+        const val AZIMUTH = 0.0f // Угол между севером и интересующим направлением на плоскости карты, в градусах в диапазоне от 0 до 360)
+        const val TILT = 0.0f // Наклон камеры в градусах
+        const val MIN_TIME_MS = 1000L // Интервал опроса изменения местоположения в миллисекундах
+        const val MIN_DISTANCE_M = 500f // Минимальная точность определения местоположения в метрах
     }
 }
