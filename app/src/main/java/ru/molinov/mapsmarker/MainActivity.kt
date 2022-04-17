@@ -42,7 +42,7 @@ class MainActivity : AppCompatActivity() {
                     // builder - создаём экземпляр класса AlertDialog.Builder, задаём параметры,
                     // затем создаём экземпляр диалога и показываем его пользователю
                     AlertDialog.Builder(this)
-                        .setTitle(getString(R.string.need_permisson))
+                        .setMessage(getString(R.string.need_permission))
                         .setPositiveButton(android.R.string.ok) { _, _ ->
                             // При нажатии positive button - повторно запрашиваем разрешение
                             requestPermission()
